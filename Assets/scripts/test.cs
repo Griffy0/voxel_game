@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Threading;
 using System.Linq;
+using System;
 
 public class test : MonoBehaviour
 {
@@ -77,11 +78,11 @@ public class test : MonoBehaviour
         for (int i = 0; i < x_tiles; i++){
             voxel_objects[i] = new tile[z_tiles][];
             for (int j = 0; j < z_tiles; j++){
-                int noise = Mathf.RoundToInt(Mathf.Pow(Mathf.PerlinNoise(
+                float noise = Mathf.Pow(Mathf.PerlinNoise(
                     (flat_mult * (i + x_offset)) + perlin_offset, 
                     (flat_mult * (j + z_offset)) + perlin_offset) 
                     * 10.0f, 
-                    amplifier));
+                    amplifier);
                 voxel_objects[i][j] = new tile[y_tiles];
                 for (int k = 0; k < y_tiles; k++){
                     int block_id;
@@ -102,53 +103,55 @@ public class test : MonoBehaviour
                     else {
                         new_obj.GetComponent<Renderer>().material = base_texture;
                     }*/
-                    
-                    voxel_objects[i][j][k] = new tile(new Vector3(i, k, j), block_id, tags);
+                    if (noise > k){
+                        Debug.Log(noise-k);
+                    }
+                    voxel_objects[i][j][k] = new tile(new Vector3(i, k, j), block_id, tags, Math.Min(noise-k, 1f));
                 }
             }
         }
         return voxel_objects;
     }
 
-    List<Vector3> draw_cube_vertices(Vector3 position, bool[] directional){
+    List<Vector3> draw_cube_vertices(Vector3 position, bool[] directional, float height){
         //bool north, bool south, bool east, bool west, bool up, bool down
         List<Vector3> vertices = new List<Vector3>();
 
         if (directional[0]){
-            vertices.Add(new Vector3(-0.5f, 0.5f, -0.5f));  //0
-            vertices.Add(new Vector3(0.5f, 0.5f, -0.5f));   //1
+            vertices.Add(new Vector3(-0.5f, height, -0.5f));  //0
+            vertices.Add(new Vector3(0.5f, height, -0.5f));   //1
             vertices.Add(new Vector3(-0.5f, -0.5f, -0.5f)); //2
             vertices.Add(new Vector3(0.5f, -0.5f, -0.5f));  //3
         };
         if (directional[1]){
-            vertices.Add(new Vector3(0.5f, 0.5f, -0.5f));   //4
-            vertices.Add(new Vector3(0.5f, 0.5f, 0.5f));    //5
+            vertices.Add(new Vector3(0.5f, height, -0.5f));   //4
+            vertices.Add(new Vector3(0.5f, height, 0.5f));    //5
             vertices.Add(new Vector3(0.5f, -0.5f, -0.5f));  //6
             vertices.Add(new Vector3(0.5f, -0.5f, 0.5f));   //7
         };
         if (directional[2]){
-            vertices.Add(new Vector3(0.5f, 0.5f, 0.5f));    //8
-            vertices.Add(new Vector3(-0.5f, 0.5f, 0.5f));   //9
+            vertices.Add(new Vector3(0.5f, height, 0.5f));    //8
+            vertices.Add(new Vector3(-0.5f, height, 0.5f));   //9
             vertices.Add(new Vector3(0.5f, -0.5f, 0.5f));   //10
             vertices.Add(new Vector3(-0.5f, -0.5f, 0.5f));  //11
         };
         if (directional[3]){
-            vertices.Add(new Vector3(-0.5f, 0.5f, 0.5f));   //12
-            vertices.Add(new Vector3(-0.5f, 0.5f, -0.5f));  //13
+            vertices.Add(new Vector3(-0.5f, height, 0.5f));   //12
+            vertices.Add(new Vector3(-0.5f, height, -0.5f));  //13
             vertices.Add(new Vector3(-0.5f, -0.5f, 0.5f));  //14
             vertices.Add(new Vector3(-0.5f, -0.5f, -0.5f)); //15
         };
         if (directional[4]){
-            vertices.Add(new Vector3(-0.5f, 0.5f, 0.5f));   //16
-            vertices.Add(new Vector3(0.5f, 0.5f, 0.5f));    //17
-            vertices.Add(new Vector3(-0.5f, 0.5f, -0.5f));  //18
-            vertices.Add(new Vector3(0.5f, 0.5f, -0.5f));   //19
+            vertices.Add(new Vector3(-0.5f, height, 0.5f));   //16
+            vertices.Add(new Vector3(0.5f, height, 0.5f));    //17
+            vertices.Add(new Vector3(-0.5f, height, -0.5f));  //18
+            vertices.Add(new Vector3(0.5f, height, -0.5f));   //19
         };
         if (directional[5]){
-            vertices.Add(new Vector3(0.5f, -0.5f, 0.5f));   //20
-            vertices.Add(new Vector3(-0.5f, -0.5f, 0.5f));  //21
-            vertices.Add(new Vector3(0.5f, -0.5f, -0.5f));  //22
-            vertices.Add(new Vector3(-0.5f, -0.5f, -0.5f)); //23
+            vertices.Add(new Vector3(0.5f, height, 0.5f));   //20
+            vertices.Add(new Vector3(-0.5f, height, 0.5f));  //21
+            vertices.Add(new Vector3(0.5f, height, -0.5f));  //22
+            vertices.Add(new Vector3(-0.5f, height, -0.5f)); //23
         }
         return vertices.Select(i => i + position).ToList();
     }
@@ -190,7 +193,7 @@ public class test : MonoBehaviour
         //new int[]{0, 1, 2, 3, 2, 1, |4, 5, 6, 7, 6, 5, |8, 9, 10, 11, 10, 9, |12, 13, 14, 15, 14, 13, |16, 17, 18, 19, 18, 17, |20, 21, 22, 23, 22, 21}
     }
 
-    List<Vector2> find_uvs(Vector2[][] uv_list, bool[] directional){
+    List<Vector2> find_uvs(Vector2[][] uv_list, bool[] directional, float height){
         List<Vector2> uvs = new List<Vector2>();
         for (int i=0;i<6;i++){
             if (directional[i] & directional[4]){
@@ -203,14 +206,18 @@ public class test : MonoBehaviour
         return uvs;
     }
 
-    bool check(tile[][][] tiles, int x, int y, int z){
+    bool check(tile[][][] tiles, int x, int y, int z, float height){
         //xzy
-        if (x < 0|z < 0|y < 0)       return false;
-        if (x >= tiles.Length)       return false;
-        if (z >= tiles[x].Length)    return false;
-        if (y >= tiles[x][z].Length) return false;
         if (tiles[x][z][y].tags.Contains("transparent")) return true;
+        if (tiles[x][z][y].height_percentile < height)  return true;
         return false;
+        /*
+        if (x < 1|z < 1|y < 1)       return false;
+        if (x >= tiles.Length-1)       return false;
+        if (z >= tiles[x].Length-1)    return false;
+        if (y >= tiles[x][z].Length-1) return false;
+        
+        return false;*/
     }
 
     void generate_chunk(Vector3 position, float seed){
@@ -228,44 +235,48 @@ public class test : MonoBehaviour
         uvs = mesh.uv;
         //Debug.Log(voxel_objects.GetLength(0));
         //triangles.Length / 36 * 8
+        float height_percentile;
         for (int i=1;i<voxel_objects.Length-1;i++){
             for (int j=1;j<voxel_objects[i].Length-1;j++){
                 for (int k=1;k<voxel_objects[i][j].Length-1;k++){
                     if (!voxel_objects[i][j][k].tags.Contains("transparent")){
+                        height_percentile = voxel_objects[i][j][k].height_percentile;
                         triangles = triangles.Concat(draw_cube_triangles(
                             vertices.Length, 
                             new bool[]{
-                                check(voxel_objects, i, k, j-1), 
-                                check(voxel_objects, i+1, k, j), 
-                                check(voxel_objects, i, k, j+1), 
-                                check(voxel_objects, i-1, k, j), 
-                                check(voxel_objects, i, k+1, j), 
-                                check(voxel_objects, i, k-1, j)
+                                check(voxel_objects, i, k, j-1, height_percentile), 
+                                check(voxel_objects, i+1, k, j, height_percentile), 
+                                check(voxel_objects, i, k, j+1, height_percentile), 
+                                check(voxel_objects, i-1, k, j, height_percentile), 
+                                check(voxel_objects, i, k+1, j, 0f), 
+                                check(voxel_objects, i, k-1, j, 0f)
                             }))
                             .ToArray();
 
                         vertices = vertices.Concat(draw_cube_vertices(
                             voxel_objects[i][j][k].pos, 
                             new bool[]{
-                                check(voxel_objects, i, k, j-1), 
-                                check(voxel_objects, i+1, k, j), 
-                                check(voxel_objects, i, k, j+1), 
-                                check(voxel_objects, i-1, k, j), 
-                                check(voxel_objects, i, k+1, j), 
-                                check(voxel_objects, i, k-1, j)
-                            }))
+                                check(voxel_objects, i, k, j-1, height_percentile), 
+                                check(voxel_objects, i+1, k, j, height_percentile), 
+                                check(voxel_objects, i, k, j+1, height_percentile), 
+                                check(voxel_objects, i-1, k, j, height_percentile), 
+                                check(voxel_objects, i, k+1, j, 0f), 
+                                check(voxel_objects, i, k-1, j, 0f)
+                            },
+                            voxel_objects[i][j][k].height_percentile))
                             .ToArray();
                         
                         uvs = uvs.Concat(find_uvs(
                             texture_coordinates["grass"], 
                             new bool[]{
-                                check(voxel_objects, i, k, j+1), 
-                                check(voxel_objects, i+1, k, j), 
-                                check(voxel_objects, i, k, j-1), 
-                                check(voxel_objects, i-1, k, j), 
-                                check(voxel_objects, i, k+1, j), 
-                                check(voxel_objects, i, k-1, j)
-                            }))
+                                check(voxel_objects, i, k, j+1, height_percentile), 
+                                check(voxel_objects, i+1, k, j, height_percentile), 
+                                check(voxel_objects, i, k, j-1, height_percentile), 
+                                check(voxel_objects, i-1, k, j, height_percentile), 
+                                check(voxel_objects, i, k+1, j, 0f), 
+                                check(voxel_objects, i, k-1, j, 0f)
+                            },
+                            voxel_objects[i][j][k].height_percentile))
                             .ToArray();
                     }
                 }
@@ -282,7 +293,7 @@ public class test : MonoBehaviour
         meshCollider.sharedMesh = mesh;
         watch.Stop();
         var elapsedMs = watch.ElapsedMilliseconds;
-        Debug.Log(elapsedMs);
+        //Debug.Log(elapsedMs);
     }
 
     void generate_chunk_wrapper(float seed){
@@ -299,7 +310,7 @@ public class test : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        float seed = Random.Range(1.0f, 10000.0f);
+        float seed = UnityEngine.Random.Range(1.0f, 10000.0f);
 
         /*
         generate_chunk(new Vector3(0, 0, 0));
