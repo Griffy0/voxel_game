@@ -1,21 +1,24 @@
 using UnityEngine;
 using System.Collections.Generic;
-
+using System.Collections;
+using System.Threading;
 using System.Linq;
 
 public class test : MonoBehaviour
 {
-    public Mesh mesh; 
-    public Vector3[] vertices;
-    public int[] triangles;
+    private Mesh mesh; 
+    private Vector3[] vertices;
+    private int[] triangles;
     private Vector3[] normals;
-    public Material base_texture;
+    private Vector2[] uvs;
+    private Material base_texture;
     public Material mid_texture;
     public Material high_texture;
     public int x_tiles = 1;
     public int z_tiles = 1;
+    public int map_x = 30;
+    public int map_z = 30;
     public float amplifier = 1.0f;
-    public Vector2[] uvs;
 
     private Dictionary<string, Vector2[][]> texture_coordinates = new Dictionary<string, Vector2[][]>{
         {
@@ -66,17 +69,17 @@ public class test : MonoBehaviour
         }
     };
 
-    tile[][][] generate_terrain(int x_tiles, int y_tiles, int z_tiles){
+    tile[][][] generate_terrain(int x_tiles, int y_tiles, int z_tiles, float x_offset, float z_offset, float perlin_offset){
         //[x, z, y]
         float flat_mult = 0.025f;
+        
         tile[][][] voxel_objects = new tile[x_tiles][][];
-        float perlin_offset = Random.Range(1.0f, 10000.0f);
         for (int i = 0; i < x_tiles; i++){
             voxel_objects[i] = new tile[z_tiles][];
             for (int j = 0; j < z_tiles; j++){
                 int noise = Mathf.RoundToInt(Mathf.Pow(Mathf.PerlinNoise(
-                    (flat_mult * i) + perlin_offset, 
-                    (flat_mult * j) + perlin_offset) 
+                    (flat_mult * (i + x_offset)) + perlin_offset, 
+                    (flat_mult * (j + z_offset)) + perlin_offset) 
                     * 10.0f, 
                     amplifier));
                 voxel_objects[i][j] = new tile[y_tiles];
@@ -210,21 +213,24 @@ public class test : MonoBehaviour
         return false;
     }
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        tile[][][] voxel_objects = generate_terrain(x_tiles, 50, z_tiles);
-        //new List<Vector3>() {new Vector3(0,0,0), new Vector3(0,1,0)};//
-        mesh = GetComponent<MeshFilter>().mesh;
+    void generate_chunk(Vector3 position, float seed){
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        
+        tile[][][] voxel_objects = generate_terrain(x_tiles+2, 50, z_tiles+2, position.x-1, position.z-1, seed);
+        GameObject chunk = new GameObject("chunk");
+        chunk.transform.position = position;
+        chunk.AddComponent<MeshRenderer>().material = GetComponent<MeshRenderer>().material;;
+        mesh = chunk.AddComponent<MeshFilter>().mesh;
+        //mesh = chunk.GetComponent<MeshFilter>().mesh;
         vertices = mesh.vertices;
         triangles = mesh.triangles;
         normals = mesh.normals;
         uvs = mesh.uv;
         //Debug.Log(voxel_objects.GetLength(0));
         //triangles.Length / 36 * 8
-        for (int i=0;i<voxel_objects.Length;i++){
-            for (int j=0;j<voxel_objects[i].Length;j++){
-                for (int k=0;k<voxel_objects[i][j].Length;k++){
+        for (int i=1;i<voxel_objects.Length-1;i++){
+            for (int j=1;j<voxel_objects[i].Length-1;j++){
+                for (int k=1;k<voxel_objects[i][j].Length-1;k++){
                     if (!voxel_objects[i][j][k].tags.Contains("transparent")){
                         triangles = triangles.Concat(draw_cube_triangles(
                             vertices.Length, 
@@ -266,19 +272,53 @@ public class test : MonoBehaviour
             }
         }
         
-        
-
         mesh.vertices = vertices;
         mesh.triangles = triangles;
         mesh.normals = normals;
         mesh.uv = uvs;
         mesh.RecalculateBounds();
         mesh.RecalculateNormals();
+        MeshCollider meshCollider = chunk.AddComponent<MeshCollider>();
+        meshCollider.sharedMesh = mesh;
+        watch.Stop();
+        var elapsedMs = watch.ElapsedMilliseconds;
+        Debug.Log(elapsedMs);
+    }
+
+    void generate_chunk_wrapper(float seed){
+
+        float num_chunks_x = map_x / 15;
+        float num_chunks_z = map_z / 15;
+        for (float i=-num_chunks_x/2;i<num_chunks_x/2;i+=1f){
+            for (float j=-num_chunks_z/2;j<num_chunks_z/2;j+=1f){
+                generate_chunk(new Vector3(i*15, 0, j*15), seed);
+            }
+        }
+    }
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        float seed = Random.Range(1.0f, 10000.0f);
+
+        /*
+        generate_chunk(new Vector3(0, 0, 0));
+        generate_chunk(new Vector3(15, 0, 0));
+        generate_chunk(new Vector3(0, 0, 15));
+        generate_chunk(new Vector3(15, 0, 15));
+        */
+        //give each chunk a copy of its own tileset to be able to edit when blocks added/destroyed
+        
+        generate_chunk_wrapper(seed);
+        
+        //new List<Vector3>() {new Vector3(0,0,0), new Vector3(0,1,0)};//
+        
     }
 
     // Update is called once per frame
     void Update()
     {
         
+       
     }
 }
