@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class character_controller : MonoBehaviour
 {
-    public float look_sensitivity = 2f, look_smooth_damp = .5f;
+    public float look_sensitivity = 2f, look_smooth_damp = .05f;
     [HideInInspector]
     public float y_rotation, x_rotation;
     [HideInInspector]
@@ -10,14 +10,53 @@ public class character_controller : MonoBehaviour
     [HideInInspector]
     public float y_rotation_v, x_rotation_v;
     public Transform camera;
+    public float move_speed = 40;
+
+    public int jump_height = 2000;
+
+    public Rigidbody rb;
+    public bool isgrounded = true;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         
     }
 
+    void MovePlayer()
+    {
+        
+        float moveHorizontal = Input.GetAxis("Horizontal");
+        float moveVertical = Input.GetAxis("Vertical");
+
+        Vector3 movement = transform.forward * moveVertical + transform.right * moveHorizontal;
+        movement.Normalize();
+        rb.AddForce(movement * move_speed, ForceMode.Acceleration);// * Time.deltaTime);
+        if (Input.GetKey(KeyCode.Space)) {
+            isgrounded = is_grounded();
+            if (isgrounded)
+            {
+                isgrounded = false;
+                rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
+                rb.AddForce(Vector3.up * jump_height, ForceMode.Impulse);
+            }
+        }
+    }
+
+    void OnCollisionEnter(Collision collision){
+        if (collision.gameObject.name == "chunk"){
+            isgrounded = true;
+        }
+    }
+
+    bool is_grounded()
+    {
+        // Implement a ground check (using Raycast or Collider checks)
+        return Physics.Raycast(transform.position, Vector3.down, 1.02f);
+    }
+
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         y_rotation += Input.GetAxis("Mouse X") * look_sensitivity;
         x_rotation += Input.GetAxis("Mouse Y") * look_sensitivity;
@@ -29,5 +68,6 @@ public class character_controller : MonoBehaviour
         transform.rotation = Quaternion.Euler(0, current_y, 0);
 
         camera.rotation = Quaternion.Euler(-current_x, current_y, 0);
+        MovePlayer();
     }
 }

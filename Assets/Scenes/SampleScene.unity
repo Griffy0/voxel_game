@@ -227,9 +227,9 @@ GameObject:
   - component: {fileID: 743074764}
   - component: {fileID: 743074763}
   - component: {fileID: 743074762}
-  - component: {fileID: 743074761}
   - component: {fileID: 743074760}
   - component: {fileID: 743074765}
+  - component: {fileID: 743074766}
   m_Layer: 0
   m_Name: player
   m_TagString: Untagged
@@ -245,8 +245,8 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 743074759}
   serializedVersion: 4
-  m_Mass: 1
-  m_Drag: 0
+  m_Mass: 70
+  m_Drag: 0.1
   m_AngularDrag: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
@@ -262,31 +262,8 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 80
+  m_Constraints: 112
   m_CollisionDetection: 0
---- !u!136 &743074761
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 743074759}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Height: 2
-  m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &743074762
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -339,7 +316,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 743074759}
-  m_Mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!4 &743074764
 Transform:
   m_ObjectHideFlags: 0
@@ -368,7 +345,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce3a79c0c540b9d4cb4521c30eb91d2c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  look_sensitivity: 2
+  look_sensitivity: 5
   look_smooth_damp: 0.05
   y_rotation: 0
   x_rotation: 0
@@ -377,6 +354,32 @@ MonoBehaviour:
   y_rotation_v: 0
   x_rotation_v: 0
   camera: {fileID: 963194228}
+  move_speed: 40
+  jump_height: 30
+  rb: {fileID: 743074760}
+  isgrounded: 1
+--- !u!64 &743074766
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 743074759}
+  m_Material: {fileID: 13400000, guid: 776b6fc193f5be144bbc3403741a0e5b, type: 2}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 1
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &813811794
 GameObject:
   m_ObjectHideFlags: 0
