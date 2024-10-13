@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Threading;
 using System.Linq;
+using System;
 
 public class test : MonoBehaviour
 {
@@ -72,84 +73,109 @@ public class test : MonoBehaviour
     tile[][][] generate_terrain(int x_tiles, int y_tiles, int z_tiles, float x_offset, float z_offset, float perlin_offset){
         //[x, z, y]
         float flat_mult = 0.025f;
+        float mult_2 = 10f;
         
         tile[][][] voxel_objects = new tile[x_tiles][][];
         for (int i = 0; i < x_tiles; i++){
             voxel_objects[i] = new tile[z_tiles][];
             for (int j = 0; j < z_tiles; j++){
-                int noise = Mathf.RoundToInt(Mathf.Pow(Mathf.PerlinNoise(
-                    (flat_mult * (i + x_offset)) + perlin_offset, 
-                    (flat_mult * (j + z_offset)) + perlin_offset) 
-                    * 10.0f, 
+                float center_noise = Mathf.RoundToInt(Mathf.Pow(Mathf.PerlinNoise(
+                        (flat_mult * (i + x_offset)) + perlin_offset, 
+                        (flat_mult * (j + z_offset)) + perlin_offset
+                    )*mult_2, 
                     amplifier));
+
+                float[] noise = new float[]{
+                    ((Mathf.Pow(Mathf.PerlinNoise(
+                        (flat_mult * (i + x_offset - 0.5f)) + perlin_offset, 
+                        (flat_mult * (j + z_offset + 0.5f)) + perlin_offset
+                    ), 
+                    amplifier)*mult_2) - center_noise) % 1, 
+                    ((Mathf.Pow(Mathf.PerlinNoise(
+                        (flat_mult * (i + x_offset + 0.5f)) + perlin_offset, 
+                        (flat_mult * (j + z_offset + 0.5f)) + perlin_offset
+                    ), 
+                    amplifier)*mult_2) - center_noise) % 1, 
+                    ((Mathf.Pow(Mathf.PerlinNoise(
+                        (flat_mult * (i + x_offset - 0.5f)) + perlin_offset, 
+                        (flat_mult * (j + z_offset - 0.5f)) + perlin_offset
+                    ), 
+                    amplifier)*mult_2) - center_noise) % 1, 
+                    ((Mathf.Pow(Mathf.PerlinNoise(
+                        (flat_mult * (i + x_offset + 0.5f)) + perlin_offset, 
+                        (flat_mult * (j + z_offset - 0.5f)) + perlin_offset
+                    ), 
+                    amplifier)*mult_2) - center_noise) % 1,
+                    center_noise
+                    };
+                    
+
+                
                 voxel_objects[i][j] = new tile[y_tiles];
                 for (int k = 0; k < y_tiles; k++){
                     int block_id;
                     List<string> tags = new List<string>();
-                    if (k <= noise){
+                    if (k == Mathf.RoundToInt(noise[4])){
                         block_id = 1;
+                        if (true){
+                            voxel_objects[i][j][k] = new tile(new Vector3(i, k, j), block_id, tags, noise);
+                        }
+                        else{
+                            voxel_objects[i][j][k] = new tile(new Vector3(i, k, j), block_id, tags, new float[]{0.5f,0.5f,0.5f,0.5f,0.5f});
+                        }
+
                     }
                     else {
                         block_id = 0;
                         tags.Add("transparent");
-                    };
-                    /*if (k >= 10 && k < 25){
-                        new_obj.GetComponent<Renderer>().material = mid_texture;
-                    }
-                    else if (k >= 25){
-                        new_obj.GetComponent<Renderer>().material = high_texture;
-                    }
-                    else {
-                        new_obj.GetComponent<Renderer>().material = base_texture;
-                    }*/
-                    
-                    voxel_objects[i][j][k] = new tile(new Vector3(i, k, j), block_id, tags);
+                        voxel_objects[i][j][k] = new tile(new Vector3(i, k, j), block_id, tags, new float[]{0.5f,0.5f,0.5f,0.5f,0.5f});
+                    };                    
                 }
             }
         }
         return voxel_objects;
     }
 
-    List<Vector3> draw_cube_vertices(Vector3 position, bool[] directional){
+    List<Vector3> draw_cube_vertices(Vector3 position, bool[] directional, float[] heights){
         //bool north, bool south, bool east, bool west, bool up, bool down
         List<Vector3> vertices = new List<Vector3>();
-
+        /*
         if (directional[0]){
-            vertices.Add(new Vector3(-0.5f, 0.5f, -0.5f));  //0
-            vertices.Add(new Vector3(0.5f, 0.5f, -0.5f));   //1
+            vertices.Add(new Vector3(-0.5f, heights[2]-0.5f, -0.5f));  //0
+            vertices.Add(new Vector3(0.5f, heights[3]-0.5f, -0.5f));   //1
             vertices.Add(new Vector3(-0.5f, -0.5f, -0.5f)); //2
             vertices.Add(new Vector3(0.5f, -0.5f, -0.5f));  //3
         };
         if (directional[1]){
-            vertices.Add(new Vector3(0.5f, 0.5f, -0.5f));   //4
-            vertices.Add(new Vector3(0.5f, 0.5f, 0.5f));    //5
+            vertices.Add(new Vector3(0.5f, heights[3]-0.5f, -0.5f));   //4
+            vertices.Add(new Vector3(0.5f, heights[1]-0.5f, 0.5f));    //5
             vertices.Add(new Vector3(0.5f, -0.5f, -0.5f));  //6
             vertices.Add(new Vector3(0.5f, -0.5f, 0.5f));   //7
         };
         if (directional[2]){
-            vertices.Add(new Vector3(0.5f, 0.5f, 0.5f));    //8
-            vertices.Add(new Vector3(-0.5f, 0.5f, 0.5f));   //9
+            vertices.Add(new Vector3(0.5f, heights[1]-0.5f, 0.5f));    //8
+            vertices.Add(new Vector3(-0.5f, heights[0]-0.5f, 0.5f));   //9
             vertices.Add(new Vector3(0.5f, -0.5f, 0.5f));   //10
             vertices.Add(new Vector3(-0.5f, -0.5f, 0.5f));  //11
         };
         if (directional[3]){
-            vertices.Add(new Vector3(-0.5f, 0.5f, 0.5f));   //12
-            vertices.Add(new Vector3(-0.5f, 0.5f, -0.5f));  //13
+            vertices.Add(new Vector3(-0.5f, heights[0]-0.5f, 0.5f));   //12
+            vertices.Add(new Vector3(-0.5f, heights[2]-0.5f, -0.5f));  //13
             vertices.Add(new Vector3(-0.5f, -0.5f, 0.5f));  //14
             vertices.Add(new Vector3(-0.5f, -0.5f, -0.5f)); //15
-        };
+        };*/
         if (directional[4]){
-            vertices.Add(new Vector3(-0.5f, 0.5f, 0.5f));   //16
-            vertices.Add(new Vector3(0.5f, 0.5f, 0.5f));    //17
-            vertices.Add(new Vector3(-0.5f, 0.5f, -0.5f));  //18
-            vertices.Add(new Vector3(0.5f, 0.5f, -0.5f));   //19
-        };
+            vertices.Add(new Vector3(-0.5f, heights[0]-0.5f, 0.5f));   //16
+            vertices.Add(new Vector3(0.5f, heights[1]-0.5f, 0.5f));    //17
+            vertices.Add(new Vector3(-0.5f, heights[2]-0.5f, -0.5f));  //18
+            vertices.Add(new Vector3(0.5f, heights[3]-0.5f, -0.5f));   //19
+        };/*
         if (directional[5]){
             vertices.Add(new Vector3(0.5f, -0.5f, 0.5f));   //20
             vertices.Add(new Vector3(-0.5f, -0.5f, 0.5f));  //21
             vertices.Add(new Vector3(0.5f, -0.5f, -0.5f));  //22
             vertices.Add(new Vector3(-0.5f, -0.5f, -0.5f)); //23
-        }
+        }*/
         return vertices.Select(i => i + position).ToList();
     }
 
@@ -158,6 +184,7 @@ public class test : MonoBehaviour
         List<int> tris = new List<int>();
         int missed = 0;
         //Debug.Log(directional[2]);
+        /*
         if (directional[0]){
             tris.AddRange(new List<int>{0, 1, 2, 3, 2, 1});
         }
@@ -177,21 +204,23 @@ public class test : MonoBehaviour
             tris.AddRange(new List<int>{12, 13, 14, 15, 14, 13}.Select(i => i - missed));
         }
         else {missed += 4;};
-
+        */
+        //16, 17, 18, 19, 18, 17
         if (directional[4]){
-            tris.AddRange(new List<int>{16, 17, 18, 19, 18, 17}.Select(i => i - missed));
+            tris.AddRange(new List<int>{0,1,2,3,2,1}.Select(i => i - missed));
         }
         else {missed += 4;};
-        
+        /*
         if (directional[5]){
             tris.AddRange(new List<int>{20, 21, 22, 23, 22, 21}.Select(i => i - missed));
-        };
+        };*/
         return tris.Select(i => i+offset).ToArray();
         //new int[]{0, 1, 2, 3, 2, 1, |4, 5, 6, 7, 6, 5, |8, 9, 10, 11, 10, 9, |12, 13, 14, 15, 14, 13, |16, 17, 18, 19, 18, 17, |20, 21, 22, 23, 22, 21}
     }
 
     List<Vector2> find_uvs(Vector2[][] uv_list, bool[] directional){
         List<Vector2> uvs = new List<Vector2>();
+        /*
         for (int i=0;i<6;i++){
             if (directional[i] & directional[4]){
                 uvs.AddRange(uv_list[i]);
@@ -199,7 +228,8 @@ public class test : MonoBehaviour
             else if (directional[i] & !directional[4]){
                 uvs.AddRange(uv_list[6]);
             }
-        }
+        }*/
+        uvs.AddRange(uv_list[4]);
         return uvs;
     }
 
@@ -253,7 +283,9 @@ public class test : MonoBehaviour
                                 check(voxel_objects, i-1, k, j), 
                                 check(voxel_objects, i, k+1, j), 
                                 check(voxel_objects, i, k-1, j)
-                            }))
+                            },
+                            voxel_objects[i][j][k].height
+                            ))
                             .ToArray();
                         
                         uvs = uvs.Concat(find_uvs(
@@ -299,7 +331,7 @@ public class test : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        float seed = Random.Range(1.0f, 10000.0f);
+        float seed = UnityEngine.Random.Range(1.0f, 10000.0f);
 
         /*
         generate_chunk(new Vector3(0, 0, 0));
