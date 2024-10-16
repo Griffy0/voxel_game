@@ -22,6 +22,8 @@ public class test : MonoBehaviour
     public float amplifier = 1.0f;
     public float mult_2 = 10f;
     public float flat_mult = 0.15f;
+    public float mult_mountains = 10f;
+    public float mult_mountains_2 = 0.4f;
 
 
     private Dictionary<string, Vector2[][]> texture_coordinates = new Dictionary<string, Vector2[][]>{
@@ -73,17 +75,22 @@ public class test : MonoBehaviour
         }
     };
 
-    float perlin_grab(float flat_mult, float flat_mult_2, float x, float z, float offset, float perlin_seed){
-        return (Mathf.Pow(
+    float perlin_grab(float flat_mult, float flat_mult_2, float x, float z, float offset, float perlin_seed, float perlin_seed_2){
+        return ((
             Mathf.PerlinNoise(
-                (flat_mult * (x - 0.5f)) + perlin_seed, 
-                (flat_mult * (z + 0.5f)) + perlin_seed
-            ), 
-        amplifier)
-        *flat_mult_2) - offset; 
+                (flat_mult * x) + perlin_seed, 
+                (flat_mult * z) + perlin_seed
+            )
+            *flat_mult_2) - offset) + 
+        (
+            Mathf.PerlinNoise(
+                (mult_mountains * x) + perlin_seed, 
+                (mult_mountains * z) + perlin_seed 
+            )
+        *mult_mountains_2);
     }
 
-    tile[][][] generate_terrain(int x_tiles, int y_tiles, int z_tiles, float x_offset, float z_offset, float perlin_offset){
+    tile[][][] generate_terrain(int x_tiles, int y_tiles, int z_tiles, float x_offset, float z_offset, float perlin_offset, float perlin_offset_2){
         //[x, z, y]
         tile[][][] voxel_objects = new tile[x_tiles][][];
         for (int i = 0; i < x_tiles; i++){
@@ -93,10 +100,11 @@ public class test : MonoBehaviour
                     perlin_grab(
                         flat_mult,
                         mult_2,
-                        i+x_offset,
-                        j+z_offset,
-                        0,
-                        perlin_offset
+                        i+x_offset-0.5f,
+                        j+z_offset+0.5f,
+                        -2,
+                        perlin_offset,
+                        perlin_offset_2
                     )
                 );
                     
@@ -108,26 +116,42 @@ public class test : MonoBehaviour
                     amplifier));*/
 
                 float[] noise = new float[]{
-                    ((Mathf.Pow(Mathf.PerlinNoise(
-                        (flat_mult * (i + x_offset - 0.5f)) + perlin_offset, 
-                        (flat_mult * (j + z_offset + 0.5f)) + perlin_offset
+                    perlin_grab(
+                        flat_mult,
+                        mult_2,
+                        i+x_offset-0.5f,
+                        j+z_offset+0.5f,
+                        center_noise,
+                        perlin_offset,
+                        perlin_offset_2
                     ), 
-                    amplifier)*mult_2) - center_noise), 
-                    ((Mathf.Pow(Mathf.PerlinNoise(
-                        (flat_mult * (i + x_offset + 0.5f)) + perlin_offset, 
-                        (flat_mult * (j + z_offset + 0.5f)) + perlin_offset
+                    perlin_grab(
+                        flat_mult,
+                        mult_2,
+                        i+x_offset+0.5f,
+                        j+z_offset+0.5f,
+                        center_noise,
+                        perlin_offset,
+                        perlin_offset_2
                     ), 
-                    amplifier)*mult_2) - center_noise), 
-                    ((Mathf.Pow(Mathf.PerlinNoise(
-                        (flat_mult * (i + x_offset - 0.5f)) + perlin_offset, 
-                        (flat_mult * (j + z_offset - 0.5f)) + perlin_offset
+                    perlin_grab(
+                        flat_mult,
+                        mult_2,
+                        i+x_offset-0.5f,
+                        j+z_offset-0.5f,
+                        center_noise,
+                        perlin_offset,
+                        perlin_offset_2
                     ), 
-                    amplifier)*mult_2) - center_noise), 
-                    ((Mathf.Pow(Mathf.PerlinNoise(
-                        (flat_mult * (i + x_offset + 0.5f)) + perlin_offset, 
-                        (flat_mult * (j + z_offset - 0.5f)) + perlin_offset
-                    ), 
-                    amplifier)*mult_2) - center_noise),
+                    perlin_grab(
+                        flat_mult,
+                        mult_2,
+                        i+x_offset+0.5f,
+                        j+z_offset-0.5f,
+                        center_noise,
+                        perlin_offset,
+                        perlin_offset_2
+                    ),
                     center_noise
                     };
                     
@@ -259,12 +283,13 @@ public class test : MonoBehaviour
         return false;
     }
 
-    void generate_chunk(Vector3 position, float seed){
+    void generate_chunk(Vector3 position, float seed, float seed2){
         var watch = System.Diagnostics.Stopwatch.StartNew();
         
-        tile[][][] voxel_objects = generate_terrain(x_tiles+2, 50, z_tiles+2, position.x-1, position.z-1, seed);
+        tile[][][] voxel_objects = generate_terrain(x_tiles+2, 50, z_tiles+2, position.x-1, position.z-1, seed, seed2);
         GameObject chunk = new GameObject("chunk");
         chunk.transform.position = position;
+        chunk.transform.parent = gameObject.transform;
         chunk.AddComponent<MeshRenderer>().material = GetComponent<MeshRenderer>().material;;
         mesh = chunk.AddComponent<MeshFilter>().mesh;
         //mesh = chunk.GetComponent<MeshFilter>().mesh;
@@ -333,21 +358,25 @@ public class test : MonoBehaviour
         Debug.Log(elapsedMs);
     }
 
-    void generate_chunk_wrapper(float seed){
-
-        float num_chunks_x = map_x / 15;
-        float num_chunks_z = map_z / 15;
+    void generate_chunk_wrapper(float seed, float seed2){
+        foreach(Transform child in this.transform){
+            Destroy(child.gameObject);
+        };
+        float num_chunks_x = map_x / x_tiles;
+        float num_chunks_z = map_z / z_tiles;
         for (float i=-num_chunks_x/2;i<num_chunks_x/2;i+=1f){
             for (float j=-num_chunks_z/2;j<num_chunks_z/2;j+=1f){
-                generate_chunk(new Vector3(i*15, 0, j*15), seed);
+                generate_chunk(new Vector3(i*x_tiles, 0, j*z_tiles), seed, seed2);
             }
         }
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
+    
     void Start()
     {
-        float seed = UnityEngine.Random.Range(1.0f, 10000.0f);
+        
+
 
         /*
         generate_chunk(new Vector3(0, 0, 0));
@@ -357,16 +386,22 @@ public class test : MonoBehaviour
         */
         //give each chunk a copy of its own tileset to be able to edit when blocks added/destroyed
         
-        generate_chunk_wrapper(seed);
+        
         
         //new List<Vector3>() {new Vector3(0,0,0), new Vector3(0,1,0)};//
         
     }
 
     // Update is called once per frame
+    public bool reload = true;
     void Update()
     {
-        
+        if (reload){
+            reload = false;
+            float seed = UnityEngine.Random.Range(1.0f, 10000.0f);
+            float seed2 = UnityEngine.Random.Range(1.0f, 10000.0f);
+            generate_chunk_wrapper(seed, seed2);
+        }
        
     }
 }

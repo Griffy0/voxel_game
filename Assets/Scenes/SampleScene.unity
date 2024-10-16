@@ -523,11 +523,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mid_texture: {fileID: 0}
   high_texture: {fileID: 0}
-  x_tiles: 60
-  z_tiles: 60
-  map_x: 15
-  map_z: 15
+  x_tiles: 16
+  z_tiles: 16
+  map_x: 512
+  map_z: 512
   amplifier: 1
+  mult_2: 1
+  flat_mult: 0.3
+  mult_mountains: 0.1
+  mult_mountains_2: 3
+  reload: 1
 --- !u!4 &813811796
 Transform:
   m_ObjectHideFlags: 0
@@ -767,6 +772,11 @@ MonoBehaviour:
   map_x: 30
   map_z: 30
   amplifier: 1
+  mult_2: 10
+  flat_mult: 0.15
+  mult_mountains: 10
+  mult_mountains_2: 0.4
+  reload: 1
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
