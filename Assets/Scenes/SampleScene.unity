@@ -523,11 +523,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mid_texture: {fileID: 0}
   high_texture: {fileID: 0}
-  x_tiles: 15
-  z_tiles: 15
-  map_x: 150
-  map_z: 150
-  amplifier: 1.2
+  x_tiles: 60
+  z_tiles: 60
+  map_x: 15
+  map_z: 15
+  amplifier: 1
 --- !u!4 &813811796
 Transform:
   m_ObjectHideFlags: 0

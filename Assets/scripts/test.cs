@@ -20,6 +20,9 @@ public class test : MonoBehaviour
     public int map_x = 30;
     public int map_z = 30;
     public float amplifier = 1.0f;
+    public float mult_2 = 10f;
+    public float flat_mult = 0.15f;
+
 
     private Dictionary<string, Vector2[][]> texture_coordinates = new Dictionary<string, Vector2[][]>{
         {
@@ -70,42 +73,61 @@ public class test : MonoBehaviour
         }
     };
 
+    float perlin_grab(float flat_mult, float flat_mult_2, float x, float z, float offset, float perlin_seed){
+        return (Mathf.Pow(
+            Mathf.PerlinNoise(
+                (flat_mult * (x - 0.5f)) + perlin_seed, 
+                (flat_mult * (z + 0.5f)) + perlin_seed
+            ), 
+        amplifier)
+        *flat_mult_2) - offset; 
+    }
+
     tile[][][] generate_terrain(int x_tiles, int y_tiles, int z_tiles, float x_offset, float z_offset, float perlin_offset){
         //[x, z, y]
-        float flat_mult = 0.025f;
-        float mult_2 = 10f;
-        
         tile[][][] voxel_objects = new tile[x_tiles][][];
         for (int i = 0; i < x_tiles; i++){
             voxel_objects[i] = new tile[z_tiles][];
             for (int j = 0; j < z_tiles; j++){
-                float center_noise = Mathf.RoundToInt(Mathf.Pow(Mathf.PerlinNoise(
+                int center_noise = Mathf.RoundToInt(
+                    perlin_grab(
+                        flat_mult,
+                        mult_2,
+                        i+x_offset,
+                        j+z_offset,
+                        0,
+                        perlin_offset
+                    )
+                );
+                    
+                    
+                    /*Mathf.Pow(Mathf.PerlinNoise(
                         (flat_mult * (i + x_offset)) + perlin_offset, 
                         (flat_mult * (j + z_offset)) + perlin_offset
                     )*mult_2, 
-                    amplifier));
+                    amplifier));*/
 
                 float[] noise = new float[]{
                     ((Mathf.Pow(Mathf.PerlinNoise(
                         (flat_mult * (i + x_offset - 0.5f)) + perlin_offset, 
                         (flat_mult * (j + z_offset + 0.5f)) + perlin_offset
                     ), 
-                    amplifier)*mult_2) - center_noise) % 1, 
+                    amplifier)*mult_2) - center_noise), 
                     ((Mathf.Pow(Mathf.PerlinNoise(
                         (flat_mult * (i + x_offset + 0.5f)) + perlin_offset, 
                         (flat_mult * (j + z_offset + 0.5f)) + perlin_offset
                     ), 
-                    amplifier)*mult_2) - center_noise) % 1, 
+                    amplifier)*mult_2) - center_noise), 
                     ((Mathf.Pow(Mathf.PerlinNoise(
                         (flat_mult * (i + x_offset - 0.5f)) + perlin_offset, 
                         (flat_mult * (j + z_offset - 0.5f)) + perlin_offset
                     ), 
-                    amplifier)*mult_2) - center_noise) % 1, 
+                    amplifier)*mult_2) - center_noise), 
                     ((Mathf.Pow(Mathf.PerlinNoise(
                         (flat_mult * (i + x_offset + 0.5f)) + perlin_offset, 
                         (flat_mult * (j + z_offset - 0.5f)) + perlin_offset
                     ), 
-                    amplifier)*mult_2) - center_noise) % 1,
+                    amplifier)*mult_2) - center_noise),
                     center_noise
                     };
                     
@@ -117,13 +139,7 @@ public class test : MonoBehaviour
                     List<string> tags = new List<string>();
                     if (k == Mathf.RoundToInt(noise[4])){
                         block_id = 1;
-                        if (true){
-                            voxel_objects[i][j][k] = new tile(new Vector3(i, k, j), block_id, tags, noise);
-                        }
-                        else{
-                            voxel_objects[i][j][k] = new tile(new Vector3(i, k, j), block_id, tags, new float[]{0.5f,0.5f,0.5f,0.5f,0.5f});
-                        }
-
+                        voxel_objects[i][j][k] = new tile(new Vector3(i, k, j), block_id, tags, noise);
                     }
                     else {
                         block_id = 0;
@@ -277,12 +293,12 @@ public class test : MonoBehaviour
                         vertices = vertices.Concat(draw_cube_vertices(
                             voxel_objects[i][j][k].pos, 
                             new bool[]{
-                                check(voxel_objects, i, k, j-1), 
-                                check(voxel_objects, i+1, k, j), 
-                                check(voxel_objects, i, k, j+1), 
-                                check(voxel_objects, i-1, k, j), 
-                                check(voxel_objects, i, k+1, j), 
-                                check(voxel_objects, i, k-1, j)
+                                false,//check(voxel_objects, i, 0, j-1), 
+                                false,//check(voxel_objects, i+1, 0, j), 
+                                false,//(voxel_objects, i, 0, j+1), 
+                                false,//(voxel_objects, i-1, 0, j), 
+                                true,//(voxel_objects, i, 1, j), 
+                                true,//(voxel_objects, i, 1, j)
                             },
                             voxel_objects[i][j][k].height
                             ))
